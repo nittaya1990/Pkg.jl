@@ -285,7 +285,7 @@ may fit your package better.
 
 ## Registering packages
 
-Once a package is ready it can be registered with the [General Registry](https://github.com/JuliaRegistries/General).
+Once a package is ready it can be registered with the [General Registry](https://github.com/JuliaRegistries/General#registering-a-package-in-general) (see also the [FAQ](https://github.com/JuliaRegistries/General#faq)).
 Currently packages are submitted via [`Registrator`](https://juliaregistrator.github.io/).
 In addition to `Registrator`, [`TagBot`](https://github.com/marketplace/actions/julia-tagbot) helps manage the process of tagging releases.
 
@@ -309,5 +309,5 @@ To support the various usecases in the Julia package ecosystem, the Pkg develope
 * [`Preferences.jl`](https://github.com/JuliaPackaging/Preferences.jl) allows packages to read and write preferences to the top-level `Project.toml`.
   These preferences can be read at runtime or compile-time, to enable or disable different aspects of package behavior.
   Packages previously would write out files to their own package directories to record options set by the user or environment, but this is highly discouraged now that `Preferences` is available.
-  Preferences are available from Juilia 1.6 onward.
+  Preferences are available from Julia 1.6 onward.
  

@@ -64,6 +64,15 @@ temp_pkg_dir(;rm=false) do project_path; cd(project_path) do;
     pkg"add Example,Random"
     pkg"rm Example,Random"
     pkg"add Example#master"
+    pkg"rm Example"
+    pkg"add https://github.com/JuliaLang/Example.jl#master"
+
+    ## TODO: figure out how to test these in CI
+    # pkg"rm Example"
+    # pkg"add git@github.com:JuliaLang/Example.jl.git"
+    # pkg"rm Example"
+    # pkg"add \"git@github.com:JuliaLang/Example.jl.git\"#master"
+    # pkg"rm Example"
 
     # Test upgrade --fixed doesn't change the tracking (https://github.com/JuliaLang/Pkg.jl/issues/434)
     entry = Pkg.Types.manifest_info(EnvCache().manifest, TEST_PKG.uuid)
@@ -352,6 +361,12 @@ temp_pkg_dir() do project_path; cd(project_path) do
         @test "remove" in c
         @test apply_completion("rm E") == "rm Example"
         @test apply_completion("add Exampl") == "add Example"
+
+        # help mode
+        @test apply_completion("?ad") == "?add"
+        @test apply_completion("?act") == "?activate"
+        @test apply_completion("? ad") == "? add"
+        @test apply_completion("? act") == "? activate"
 
         # stdlibs
         c, r = test_complete("add Stat")
@@ -644,6 +659,9 @@ end
         git_init_and_commit(project_path)
         @test_logs () pkg"status --diff"
         @test_logs () pkg"status -d"
+
+        # comma-separated packages get parsed
+        pkg"status Example, Random"
     end
 end
 
@@ -669,17 +687,32 @@ end
     @inferred Pkg.REPLMode.CompoundSpecs(Pair{String,Vector{Pkg.REPLMode.CommandDeclaration}}[])
 end
 
+# To be used to reply to a prompt
+function withreply(f, ans)
+    p = Pipe()
+    try
+        redirect_stdin(p) do
+            @async println(p, ans)
+            f()
+        end
+    finally
+        close(p)
+    end
+end
+
 @testset "REPL missing package install hook" begin
     isolate(loaded_depot=true) do
         @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:notapackage]) == false
 
-        println(stdin.buffer, "n") # simulate rejecting prompt with `n\n`
-        @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:Example]) == false
-        flush(stdin.buffer)
+        # don't offer to install the dummy "julia" entry that's in General
+        @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:julia]) == false
 
-        println(stdin.buffer, "y") # simulate accepting prompt with `y\n`
-        @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:Example]) == true
-        flush(stdin.buffer)
+        withreply("n") do
+            @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:Example]) == false
+        end
+        withreply("y") do
+            @test Pkg.REPLMode.try_prompt_pkg_add(Symbol[:Example]) == true
+        end
     end
 end
 
